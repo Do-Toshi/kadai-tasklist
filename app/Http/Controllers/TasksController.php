@@ -12,7 +12,17 @@ class TasksController extends Controller
      */
     public function index()
     {
-        $tasks = Task::all();
+        // 現在のユーザーを取得
+        $user = auth()->user();
+
+        // ユーザーがログインしていない場合、インデックスページにリダイレクト
+        if (!$user) {
+            return redirect('/'); // インデックスページにリダイレクト
+        }
+
+        // ユーザーのタスクを取得
+        $tasks = $user->tasks;
+
         return view('tasks.index', compact('tasks'));
     }
 
@@ -43,9 +53,10 @@ class TasksController extends Controller
         $task = new Task;
         $task->status = $request->status;
         $task->content = $request->content;
+        $task->user_id = auth()->id();
         $task->save();
 
-        return redirect('/');
+        return redirect('/tasks');
     }
 
     /**
@@ -55,6 +66,11 @@ class TasksController extends Controller
     {
         // idの値でメッセージを検索して取得
         $task = Task::findOrFail($id);
+
+        // 他のユーザーのタスクにアクセスしようとした場合
+        if ($task->user_id !== auth()->id()) {
+           return redirect('/'); 
+       }
 
         // メッセージ詳細ビューでそれを表示
         return view('tasks.show', [
